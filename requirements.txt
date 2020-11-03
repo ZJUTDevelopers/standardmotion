@@ -1,0 +1,6 @@
+Crypto
+PyQt5
+pyttsx3
+numpy
+fbs
+pyinstaller
