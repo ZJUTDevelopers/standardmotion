@@ -110,17 +110,17 @@ background-color: Firebrick;
 class TitleBar(QWidget):
      
      # 窗口最小化信号
-     windowMinimumed = pyqtSignal()
+    windowMinimumed = pyqtSignal()
      # 窗口最大化信号
-     windowMaximumed = pyqtSignal()
+    windowMaximumed = pyqtSignal()
      # 窗口还原信号
-     windowNormaled = pyqtSignal()
+    windowNormaled = pyqtSignal()
      # 窗口关闭信号
-     windowClosed = pyqtSignal()
+    windowClosed = pyqtSignal()
      # 窗口移动
-     windowMoved = pyqtSignal(QPoint)
+    windowMoved = pyqtSignal(QPoint)
  
-     def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
          super(TitleBar, self).__init__(*args, **kwargs)
          # 支持qss设置背景
          self.setAttribute(Qt.WA_StyledBackground, True)
@@ -137,7 +137,7 @@ class TitleBar(QWidget):
          # 窗口图标
          self.iconLabel = QLabel(self)
          self.iconLabel.setFixedSize(38,38)
-         self.iconLabel.setPixmap(QPixmap('C:\\Users\\Hp\\Desktop\\1.png'))
+         self.iconLabel.setPixmap(QPixmap('./src/main/python/1.png'))
          self.iconLabel.setScaledContents(True)
          layout.addWidget(self.iconLabel)
          
@@ -167,7 +167,7 @@ class TitleBar(QWidget):
          layout.addWidget(self.buttonClose)
          # 初始高度
          self.setHeight()
-     def showMaximized(self):
+    def showMaximized(self):
          if self.buttonMaximum.text() == '':
              # 最大化
              self.buttonMaximum.setText('')
@@ -176,7 +176,7 @@ class TitleBar(QWidget):
              self.buttonMaximum.setText('')
              self.windowNormaled.emit()
  
-     def setHeight(self, height=38):
+    def setHeight(self, height=38):
          """设置标题栏高度"""
          self.setMinimumHeight(height)
          self.setMaximumHeight(height)
@@ -188,42 +188,41 @@ class TitleBar(QWidget):
          self.buttonClose.setMinimumSize(height, height)
          self.buttonClose.setMaximumSize(height, height)
  
-     def setTitle(self, title):
+    def setTitle(self, title):
          """设置标题"""
          self.titleLabel.setText(title)
  
-     def setIcon(self, icon):
+    def setIcon(self, icon):
          """设置图标"""
          self.iconLabel.setPixmap(icon.pixmap(self.iconSize, self.iconSize))
  
-     def setIconSize(self, size):
+    def setIconSize(self, size):
          """设置图标大小"""
          self.iconSize = size
  
-     def enterEvent(self, event):
+    def enterEvent(self, event):
          self.setCursor(Qt.ArrowCursor)
          super(TitleBar, self).enterEvent(event)
  
-     def mouseDoubleClickEvent(self, event):
+    def mouseDoubleClickEvent(self, event):
          super(TitleBar, self).mouseDoubleClickEvent(event)
          self.showMaximized()
  
-     def mousePressEvent(self, event):
+    def mousePressEvent(self, event):
          """鼠标点击事件"""
          if event.button() == Qt.LeftButton:
              self.mPos = event.pos()
          event.accept()
  
-     def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event):
          '''鼠标弹起事件'''
          self.mPos = None
          event.accept()
  
-     def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event):
          if event.buttons() == Qt.LeftButton and self.mPos:
              self.windowMoved.emit(self.mapToGlobal(event.pos() - self.mPos))
          event.accept()
-
 
 
 class gui(QDialog):
