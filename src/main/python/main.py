@@ -9,6 +9,7 @@ from PyQt5.QtCore import *
 import sys
 import qdarkstyle, datetime, webbrowser
 import os
+import cv2
 #from QcureUi import cure
 import json
 import time
@@ -21,17 +22,68 @@ import pyttsx3
 from pyttsx3 import driver
 from pyttsx3 import drivers
 from pyttsx3.drivers import sapi5
+import random
 
 initialed=False
-global_points_list=None
+global global_points_list
+global_points_list = []
+
+
+class DrawCircle(QWidget):
+    def __init__(self,parent=None):
+        super(DrawCircle,self).__init__(parent)
+        self.resize(800,450)
+        self.setWindowTitle('在窗口画直线')
+
+    def paintEvent(self,event):
+        #初始化绘图工具
+        qp=QPainter()
+        #开始在窗口绘制
+        qp.begin(self)
+        #自定义绘制方法
+        self.drawCircle(qp)
+        #结束在窗口的绘制
+        qp.end()
+
+    def drawCircle(self,qp):
+        qp.setRenderHint(qp.Antialiasing)
+        # qp.setPen(QPen(QColor(0, 160, 230), 10));
+        # QColor(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+        # qp.setPen(QPen(QColor(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 2, Qt.DashDotLine))
+        # qp.setPen(QPen(Qt.black, 2, Qt.DashDotLine))
+        # qp.setPen(pen)
+        for i, j in global_points_list:
+            qp.setPen(QPen(QColor(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 10, Qt.DashDotLine))
+            qp.drawLine(i[0] * 800, i[1] * 450, j[0] * 800, j[1] * 450)
+
+
+def qualified(x,y):
+    if( 0.12<x<0.88 and 0.12<y<0.88):
+        return True
+    else:
+        return False
 
 def start_openpose():
-    os.system("start /min cmd /k C:\\Users\\Hp\\Desktop\\standardmotion\\standardmotion\\src\\main\\python\\start.bat")
+    os.system("start /min cmd /k start1.bat")
 
-folder = 'C:\\Users\\Hp\\Desktop\\standardmotion\\standardmotion\\src\\main\\python\\json'
+def start_openpose_upload():
+    os.system("start /min cmd /k start2.bat")
+
+folder1 = './json1'
+folder2 = './json2'
+
+
+#清除上一次运行剩余json文件
+def clear_cache():
+    for the_file in os.listdir(folder1):
+        file_path = os.path.join(folder1, the_file)
+        os.remove(file_path)
+    for the_file in os.listdir(folder2):
+        file_path = os.path.join(folder2, the_file)
+        os.remove(file_path)
 
 class MainWindow(QMainWindow):
-
+    #界面设置
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         # 设置窗口名称
@@ -68,7 +120,7 @@ class MainWindow(QMainWindow):
         label1.setFixedSize(200,60)
         label1.setText("MENU")
         label1.setAlignment( Qt.AlignCenter) #设置居中
-        label1.setFont(QFont("Kaushan",20,QFont.Bold))
+        label1.setFont(QFont("Century",20,QFont.Bold))
         button_layout.addWidget(label1)
 
   
@@ -76,26 +128,30 @@ class MainWindow(QMainWindow):
         pe.setColor(QPalette.WindowText,QColor(139,147, 194, 250))
         label1.setPalette(pe)
 
-        # 输入文件 按钮
-        self.upload_btn = QPushButton("输入文件")
-        self.upload_btn.setFixedSize(200, 60)
-        button_layout.addWidget(self.upload_btn)
         # 声音 按钮
         self.voice_btn = QPushButton("声音")
         self.voice_btn.setFixedSize(200, 60)
         button_layout.addWidget(self.voice_btn)
+        self.voice_btn.clicked.connect(self._voice)
         # 火柴人显示 按钮
         self.show_btn = QPushButton("火柴人显示")
         self.show_btn.setFixedSize(200, 60)
         button_layout.addWidget(self.show_btn)
+        self.show_btn.clicked.connect(self._show)
         # 计时 按钮
         self.time_btn = QPushButton("计时")
         self.time_btn.setFixedSize(200, 60)
-        button_layout.addWidget(self.time_btn)   
+        button_layout.addWidget(self.time_btn)
+        # 关于 按钮
+        self.about_btn = QPushButton("关于")
+        self.about_btn.setFixedSize(200, 60)
+        button_layout.addWidget(self.about_btn)
+        self.about_btn.clicked.connect(self._about)
         # 退出 按钮
         self.quit_btn = QPushButton(top_left_frame)
         self.quit_btn.setFixedSize(200, 60), self.quit_btn.setText("退出")
         button_layout.addWidget(self.quit_btn)
+        self.quit_btn.clicked.connect(self._quit)
         # 增加间距，美化界面
         button_layout.addStretch(1)
         
@@ -108,27 +164,71 @@ class MainWindow(QMainWindow):
         # 右边显示为stack布局 即点击按钮，右侧会加载不同的页面
         self.right_layout = QVBoxLayout(right_frame)
         # 右侧的布局已经传入了 right_frame 参数 所以后续的控件不用加此参数 布局 addwidget 即可
-        # 确认身份 界面
 
         right_button = QHBoxLayout()
-        
+
+        #开始检测  按钮
         self.start_btn = QPushButton("开始检测")
-        self.start_btn.setFixedSize(200, 60)
+        self.start_btn.setStyleSheet('''QPushButton{background:rgb(106,118,200);border-radius:5px;color:white;font-family:AdobeHeitiStd;font-size:25px}
+                                        QPushButton:hover{background:rgb(106,118,200);}
+                                        QPushButton:pressed{background-color:rgb(106,118,200)}''')
+        self.start_btn.setFixedSize(150, 45)
+        self.start_btn.clicked.connect(self._start)
         right_button.addWidget(self.start_btn)  
 
-        self.end_btn = QPushButton("停止检测")
-        self.end_btn.setFixedSize(200, 60)
-        right_button.addWidget(self.end_btn)  
-
-        right_label=QLabel("Welcome")
-        right_label.setFixedSize(700,500)
+        # 输入文件 按钮
+        self.upload_btn = QPushButton("输入文件")
+        self.upload_btn.setStyleSheet('''QPushButton{background:rgb(106,118,200);border-radius:5px;color:white;font-family:AdobeHeitiStd;font-size:25px}
+                                        QPushButton:hover{background:rgb(106,118,200);}
+                                        QPushButton:pressed{background-color:rgb(180,180,180)}''')
+        self.upload_btn.setFixedSize(150, 45)
+        self.upload_btn.clicked.connect(self._upload)
+        right_button.addWidget(self.upload_btn) 
         
-        right_label.setStyleSheet("QLabel {background-color :rgb(231,234,251);border-radius: 30px;border-style: outset;border-width: 2px;border-color: bule;color:white}")
-        right_label.setAlignment(Qt.AlignCenter)
-        #添加按钮布局和label1布局
+        #停止检测  按钮
+        self.end_btn = QPushButton("停止检测")
+        self.end_btn.setStyleSheet('''QPushButton{background:rgb(106,118,200);border-radius:5px;color:white;font-family:AdobeHeitiStd;font-size:25px}
+                                        QPushButton:hover{background:rgb(106,118,200);}
+                                        QPushButton:pressed{background-color:rgb(106,118,200)}''')
+        self.end_btn.setFixedSize(150, 45)
+        right_button.addWidget(self.end_btn)
+        self.end_btn.clicked.connect(self.end_check)
+        
+
+        self.right_label=QWidget()
+        self.right_label.setFixedSize(700,500)
+        
+        self.right_label.setStyleSheet("QWidget{background-color :rgb(231,234,251);border-radius: 30px;border-style: outset;border-width: 2px;border-color: bule;color:white}")
+        #self.right_label.setAlignment(Qt.AlignCenter)
+
+
+        right_top_widget = QHBoxLayout()
+        self.right_label2=QLabel()
+        self.right_label2.setText("程序未运行")
+        self.right_label2.setFixedSize(300,50)
+        self.right_label2.setStyleSheet("QLabel{background-color :rgb(231,234,251);border-radius: 15px;border-style: outset;border-width: 2px;border-color: bule;color:black}")
+        #self.right_label2.setAlignment(Qt.AlignCenter)
+        self.right_label2.setAlignment(Qt.AlignCenter) 
+        self.right_label2.setFont(QFont("隶书",30, QFont.Bold) )
+
+        pe = QPalette()
+        #pe.setColor(QPalette.WindowText,Qt.red)
+        #self.right_label2.setAutoFillBackground(True)
+        pe.setColor(QPalette.Window,Qt.black)
+        self.right_label2.setPalette(pe)
+
+
+        right_top_widget.addWidget(self.right_label2)
+        right_top_label2_widget = QWidget()
+        right_top_label2_widget.setLayout(right_top_widget)
+        
+
+    
+        #添加按钮布局和right_label布局
         right_btn_widget = QWidget()
         right_btn_widget.setLayout(right_button)
-        self.right_layout.addWidget(right_label)
+        self.right_layout.addWidget(right_top_label2_widget)
+        self.right_layout.addWidget(self.right_label)       
         self.right_layout.setAlignment(Qt.AlignHCenter | Qt.AlignCenter)
         self.right_layout.addWidget(right_btn_widget)
 
@@ -143,14 +243,105 @@ class MainWindow(QMainWindow):
         self.splitter2 = QSplitter(Qt.Horizontal)
         self.splitter2.addWidget(self.splitter1)
         self.splitter2.addWidget(right_frame)
-        
-        
-        
+           
         widget = QWidget()
         pagelayout.addWidget(self.splitter2)
         widget.setLayout(pagelayout)
         self.setCentralWidget(widget)
         
+        self.show_button_checked=0 #控制show按钮开关的两种状态
+        self.voice_button_checked=0 #控制voice按钮开关的两种状态
+        clear_cache()
+
+    def judge1(self):
+        jsonlist=os.listdir(folder1)
+        count1,count2=0.0,0.0
+        chosedfile=max(jsonlist)
+
+
+        with open(folder1 + '\\' + chosedfile, 'r') as jsonfile:
+            data = json.load(jsonfile)
+        
+        if(len(data['people'])==0):
+            return("未检测到人体")
+
+        key_point_array = data['people'][0]['pose_keypoints_2d']
+        midhipx, midhipy = key_point_array[8 * 3], key_point_array[8 * 3 + 1]
+        Rkneex, Rkneey = key_point_array[10 * 3], key_point_array[10 * 3 + 1]
+        Neckx, Necky = key_point_array[1 * 3], key_point_array[1 * 3 + 1]
+        Nosex, Nosey = key_point_array[0], key_point_array[1]
+        RHeelx, RHeely = key_point_array[24 * 3], key_point_array[24 * 3 + 1]
+        REarx, REary =  key_point_array[17 * 3], key_point_array[17 * 3 + 1]
+        
+
+        for i, j in [(17,1),(1,8),(8,10),(10,11),(11,22),(2,3),(3,4)]:
+            if (qualified(key_point_array[3 * i], key_point_array[3 * i + 1]) and qualified(key_point_array[3 * j],key_point_array[3 * j + 1])):
+                global_points_list.append([(key_point_array[3 * i], key_point_array[3 * i + 1]),(key_point_array[3 * j], key_point_array[3 * j + 1])])
+
+        if (((Neckx - Nosex)!=0) and ((midhipx - Rkneex)!=0) and ((midhipx - RHeelx)!=0) and (midhipy - RHeely)!=0):
+            # k_1_2 = (Necky - Nosey) / (Neckx - Nosex)
+            # k_1_3 = (Nosey - midhipy) / (Nosex - midhipx)
+            k_1_2 = (Necky - REary) / (Neckx - REarx)
+            k_1_3 = (REary - midhipy) / (REarx - midhipx)
+            k_2_3 = (Necky - midhipy) / (Neckx - midhipx)
+            k_3_4 = (midhipy - Rkneey) / (midhipx - Rkneex)
+            k_3_5 = (midhipy - RHeely) / (midhipx - RHeelx)
+            #print(k_2_3, "  ", k_3_4, "    ", abs(k_2_3 / k_3_4))
+            if (1.2 > abs(k_2_3 / k_3_4) > 0.4):
+                #print(k,"   ",chosedfile,"标准")
+                return("标准")
+            else:
+                #print(k,"   ",chosedfile,"不标准")
+                return("不标准")
+        #print(count1,count2,count1/count2)
+        else:
+            return("图像不完整")
+    
+    
+    def judge2(self):
+        jsonlist=os.listdir(folder2)
+        count1,count2=0.0,0.0
+        chosedfile=max(jsonlist)
+
+
+        with open(folder2 + '\\' + chosedfile, 'r') as jsonfile:
+            data = json.load(jsonfile)
+        
+        if(len(data['people'])==0):
+            return("未检测到人体")
+
+        key_point_array = data['people'][0]['pose_keypoints_2d']
+        midhipx, midhipy = key_point_array[8 * 3], key_point_array[8 * 3 + 1]
+        Rkneex, Rkneey = key_point_array[10 * 3], key_point_array[10 * 3 + 1]
+        Neckx, Necky = key_point_array[1 * 3], key_point_array[1 * 3 + 1]
+        Nosex, Nosey = key_point_array[0], key_point_array[1]
+        RHeelx, RHeely = key_point_array[24 * 3], key_point_array[24 * 3 + 1]
+        REarx, REary =  key_point_array[17 * 3], key_point_array[17 * 3 + 1]
+
+        for i, j in [(17,1),(1,8),(8,10),(10,11),(11,22),(2,3),(3,4)]:
+            if (qualified(key_point_array[3 * i], key_point_array[3 * i + 1]) and qualified(key_point_array[3 * j],key_point_array[3 * j + 1])):
+                global_points_list.append([(key_point_array[3 * i], key_point_array[3 * i + 1]),(key_point_array[3 * j], key_point_array[3 * j + 1])])
+       
+        if (((Neckx - Nosex)!=0) and ((midhipx - Rkneex)!=0) and ((midhipx - RHeelx)!=0) and (midhipy - RHeely)!=0):
+            # k_1_2 = (Necky - Nosey) / (Neckx - Nosex)
+            # k_1_3 = (Nosey - midhipy) / (Nosex - midhipx)
+            k_1_2 = (Necky - REary) / (Neckx - REarx)
+            k_1_3 = (REary - midhipy) / (REarx - midhipx)
+            k_2_3 = (Necky - midhipy) / (Neckx - midhipx)
+            k_3_4 = (midhipy - Rkneey) / (midhipx - Rkneex)
+            k_3_5 = (midhipy - RHeely) / (midhipx - RHeelx)
+            #print(k_2_3, "  ", k_3_4, "    ", abs(k_2_3 / k_3_4))
+            if (1.2 > abs(k_2_3 / k_3_4) > 0.4):
+                #print(k,"   ",chosedfile,"标准")
+                return("标准")
+            else:
+                #print(k,"   ",chosedfile,"不标准")
+                return("不标准")
+        #print(count1,count2,count1/count2)
+        else:
+            return("图像不完整")
+    
+
 
     def center(self):
         """
@@ -160,6 +351,126 @@ class MainWindow(QMainWindow):
         size = self.geometry()
         self.move((screen.width() - size.width()) / 2, (screen.height() - size.height()) / 2)
 
+    def running1(self):
+        self.right_label2.setText(self.judge1())
+
+        #if(self.show_button_checked==1):
+        #    self.drawing.update()
+
+        #self.right_label2.setText("标准")
+    
+
+    def running2(self):
+        self.right_label2.setText(self.judge2())
+
+        #self.right_label2.setText("标准")
+    
+
+
+    def _start(self):
+        start_openpose()
+        wndtitle = 'OpenPose 1.5.1'
+        wndclass = None
+        while True:
+            wnd=win32gui.FindWindow(wndclass, wndtitle)
+            if(wnd!=0):          
+                #win32gui.SetParent(wnd, int(self.right_label.winId()))
+                #实现将win32gui嵌入right_label_new 将right_label_new嵌入right_label
+                #self.right_label_new= QWindow.fromWinId(wnd)
+                ##self.right_label_new.setStyleSheet("QWidow{border-radius: 30px;border-style: outset;border-width: 2px;border-color: bule;color:white}")
+                #self.right_label_new.createWindowContainer(self.right_label, self)
+                #self.right_label_new.setWidth(300)
+                #self.right_label_new.setHeight(700)
+                #self.right_label_new.show()
+
+                win32gui.ShowWindow(win32gui.FindWindow(wndclass, wndtitle), win32con.SW_MINIMIZE)
+                self.running_timer = QTimer(self)
+                self.running_timer.timeout.connect(self.running1)
+                self.running_timer.start(30)
+                break
+        
+
+    def _upload(self):
+        videoName, _ = QFileDialog.getOpenFileName(self, "Open", "", "*.avi *.mp4 *.gif;;All Files(*)")#限定文件格式
+        print(videoName)#返回文件位置
+
+        '''
+        #实现播放导入文件功能
+        self.right_label.setPixmap(QPixmap(videoName))
+        self.right_label.setScaledContents(True)
+        movie = QMovie(videoName)
+        self.right_label.setMovie(movie)
+        movie.start()
+        '''
+        
+        if videoName != "":  # “”为用户取消
+
+            f = open('start2.bat', mode='w',encoding='utf-8')
+            f.write("title running_openpose\n")
+            f.write("cd .\openpose\n")
+            f.write(".\\bin\OpenPoseDemo.exe --video "+videoName+" --net_resolution 320x176 --number_people_max 1 --tracking 7 --write_json ..\json2 --keypoint_scale 3 --frame_flip true")                         
+            f.close()
+
+            start_openpose_upload()
+            wndtitle = 'OpenPose 1.5.1'
+            wndclass = None
+            while True:
+                wnd=win32gui.FindWindow(wndclass, wndtitle)
+				
+                if(wnd!=0):
+                    win32gui.ShowWindow(win32gui.FindWindow(wndclass, wndtitle), win32con.SW_MINIMIZE)
+                    self.running_timer = QTimer(self)
+                    self.running_timer.timeout.connect(self.running2)
+                    self.running_timer.start(30)
+                    break
+
+    def _voice(self):
+        if(self.voice_button_checked==1):
+            self.voice_btn.setText("关闭声音")
+            self.voice_button_checked=0
+        else:
+            self.voice_btn.setText("打开声音")
+            self.voice_button_checked=1
+        '''
+        if(self.voice_btn.isChecked()):
+            #self.voice_label.setText("开启中")
+            self.voice_btn.setText("关闭")
+
+            pixmap = QPixmap('./image/sound.png')
+            pixmap=pixmap.scaled(200,200)
+
+        else:
+            #self.voice_label.setText("未开启")
+            self.voice_btn.setText("开启")
+
+            pixmap = QPixmap('./image/mute.png')
+            pixmap=pixmap.scaled(200,200)
+
+        '''
+
+    def _show(self):
+        if (self.show_button_checked==1):
+            self.show_btn.setText("关闭火柴人显示")
+            #self.drawing=DrawCircle()
+            #self.right_label.createWindowContainer(self.drawing, self)
+            self.show_button_checked=0
+        else:
+            self.show_btn.setText("火柴人显示")
+            self.show_button_checked=1
+            
+
+
+    def _about(self):
+        QMessageBox.about(self,"standmotion","By ZJUTDevelopers") 
+
+    def end_check(self):
+        os.system('TASKKILL /F /T /FI "WINDOWTITLE eq running_openpose*"')
+        
+
+    def _quit(self):
+        os.system('TASKKILL /F /T /FI "WINDOWTITLE eq running_openpose*"') #参考链接 https://blog.csdn.net/qq_36011182/article/details/80252170
+        clear_cache()
+        self.close()
 
 if __name__ == "__main__":
     App= ApplicationContext()
