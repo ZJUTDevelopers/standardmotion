@@ -32,8 +32,11 @@ global_points_list = []
 class DrawCircle(QWidget):
     def __init__(self,parent=None):
         super(DrawCircle,self).__init__(parent)
-        self.resize(800,450)
+        self.resize(700,500)
         self.setWindowTitle('在窗口画直线')
+        self.setFixedSize(700,500)
+        self.frame_path=QPainterPath()
+        self.frame_path.addRoundedRect(QRectF(0,0,700,500),50,50)
 
     def paintEvent(self,event):
         #初始化绘图工具
@@ -47,14 +50,24 @@ class DrawCircle(QWidget):
 
     def drawCircle(self,qp):
         qp.setRenderHint(qp.Antialiasing)
+        qp.fillPath(self.frame_path,QColor(231,234,251))
+        qp.drawPath(self.frame_path)
+        if(global_points_list==None):
+            cover=QPixmap('./src/main/python/1.png')
+            qp.drawPixmap(275,125,cover)
+        elif(global_points_list==[]):
+            cover=QPixmap('./src/main/python/1.png')
+            cover=cover.scaled(QSize(200,200))
+            qp.drawPixmap(275,125,cover)
+        else:
         # qp.setPen(QPen(QColor(0, 160, 230), 10));
         # QColor(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
         # qp.setPen(QPen(QColor(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 2, Qt.DashDotLine))
         # qp.setPen(QPen(Qt.black, 2, Qt.DashDotLine))
         # qp.setPen(pen)
-        for i, j in global_points_list:
-            qp.setPen(QPen(QColor(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 10, Qt.DashDotLine))
-            qp.drawLine(i[0] * 800, i[1] * 450, j[0] * 800, j[1] * 450)
+            for i, j in global_points_list:
+                qp.setPen(QPen(QColor(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 10, Qt.DashDotLine))
+                qp.drawLine(i[0] * 800, i[1] * 450, j[0] * 800, j[1] * 450)
 
 
 def qualified(x,y):
@@ -195,7 +208,7 @@ class MainWindow(QMainWindow):
         self.end_btn.clicked.connect(self.end_check)
         
 
-        self.right_label=QWidget()
+        self.right_label=DrawCircle()
         self.right_label.setFixedSize(700,500)
         
         self.right_label.setStyleSheet("QWidget{background-color :rgb(231,234,251);border-radius: 30px;border-style: outset;border-width: 2px;border-color: bule;color:white}")
@@ -299,6 +312,8 @@ class MainWindow(QMainWindow):
     
     
     def judge2(self):
+        global global_points_list
+        global_points_list=[]
         jsonlist=os.listdir(folder2)
         count1,count2=0.0,0.0
         chosedfile=max(jsonlist)
@@ -362,6 +377,8 @@ class MainWindow(QMainWindow):
 
     def running2(self):
         self.right_label2.setText(self.judge2())
+        if(self.show_button_checked==1):
+            self.right_label.update()
 
         #self.right_label2.setText("标准")
     
