@@ -27,7 +27,8 @@ import random
 initialed=False
 global global_points_list
 global_points_list = []
-
+global if_drawing
+if_drawing=0
 
 class DrawCircle(QWidget):
     def __init__(self,parent=None):
@@ -49,6 +50,7 @@ class DrawCircle(QWidget):
         qp.end()
 
     def drawCircle(self,qp):
+        global if_drawing
         qp.setRenderHint(qp.Antialiasing)
         qp.fillPath(self.frame_path,QColor(231,234,251))
         qp.drawPath(self.frame_path)
@@ -65,9 +67,10 @@ class DrawCircle(QWidget):
         # qp.setPen(QPen(QColor(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 2, Qt.DashDotLine))
         # qp.setPen(QPen(Qt.black, 2, Qt.DashDotLine))
         # qp.setPen(pen)
-            for i, j in global_points_list:
-                qp.setPen(QPen(QColor(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 10, Qt.DashDotLine))
-                qp.drawLine(i[0] * 800, i[1] * 450, j[0] * 800, j[1] * 450)
+           if(if_drawing==1):
+                for i, j in global_points_list:
+                    qp.setPen(QPen(QColor(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)), 10, Qt.DashDotLine))
+                    qp.drawLine(i[0] * 800, i[1] * 450, j[0] * 800, j[1] * 450)
 
 
 def qualified(x,y):
@@ -147,14 +150,15 @@ class MainWindow(QMainWindow):
         button_layout.addWidget(self.voice_btn)
         self.voice_btn.clicked.connect(self._voice)
         # 火柴人显示 按钮
-        self.show_btn = QPushButton("火柴人显示")
+        self.show_btn = QPushButton("开启回显")
         self.show_btn.setFixedSize(200, 60)
         button_layout.addWidget(self.show_btn)
         self.show_btn.clicked.connect(self._show)
         # 计时 按钮
-        self.time_btn = QPushButton("计时")
+        self.time_btn = QPushButton("设定运动时间")
         self.time_btn.setFixedSize(200, 60)
         button_layout.addWidget(self.time_btn)
+        self.time_btn.clicked.connect(self._set_time)
         # 关于 按钮
         self.about_btn = QPushButton("关于")
         self.about_btn.setFixedSize(200, 60)
@@ -196,7 +200,7 @@ class MainWindow(QMainWindow):
                                         QPushButton:pressed{background-color:rgb(180,180,180)}''')
         self.upload_btn.setFixedSize(150, 45)
         self.upload_btn.clicked.connect(self._upload)
-        right_button.addWidget(self.upload_btn) 
+        right_button.addWidget(self.upload_btn)
         
         #停止检测  按钮
         self.end_btn = QPushButton("停止检测")
@@ -215,7 +219,7 @@ class MainWindow(QMainWindow):
         #self.right_label.setAlignment(Qt.AlignCenter)
 
 
-        right_top_widget = QHBoxLayout()
+        
         self.right_label2=QLabel()
         self.right_label2.setText("程序未运行")
         self.right_label2.setFixedSize(300,50)
@@ -230,18 +234,32 @@ class MainWindow(QMainWindow):
         pe.setColor(QPalette.Window,Qt.black)
         self.right_label2.setPalette(pe)
 
-
+        right_top_widget = QHBoxLayout()
         right_top_widget.addWidget(self.right_label2)
         right_top_label2_widget = QWidget()
         right_top_label2_widget.setLayout(right_top_widget)
         
 
-    
+
+        self.remain_time_label=QLabel()
+        self.remain_time_label.setText("距离本次运动结束还有0s")
+        self.remain_time_label.setFixedSize(400,30)
+        self.remain_time_label.setStyleSheet("QLabel{background-color :rgb(231,234,251);border-radius: 15px;border-style: outset;border-width: 2px;border-color: bule;color:black}")
+        #self.right_label2.setAlignment(Qt.AlignCenter)
+        self.remain_time_label.setAlignment(Qt.AlignCenter) 
+        self.remain_time_label.setFont(QFont("隶书",10, QFont.Bold) )
+        
+        remain_time_widget = QHBoxLayout()
+        remain_time_widget.addWidget(self.remain_time_label)
+        remain_time_widget2 = QWidget()
+        remain_time_widget2.setLayout(remain_time_widget)
+
         #添加按钮布局和right_label布局
         right_btn_widget = QWidget()
         right_btn_widget.setLayout(right_button)
         self.right_layout.addWidget(right_top_label2_widget)
-        self.right_layout.addWidget(self.right_label)       
+        self.right_layout.addWidget(self.right_label)
+        self.right_layout.addWidget(remain_time_widget2)   
         self.right_layout.setAlignment(Qt.AlignHCenter | Qt.AlignCenter)
         self.right_layout.addWidget(right_btn_widget)
 
@@ -264,9 +282,14 @@ class MainWindow(QMainWindow):
         
         self.show_button_checked=0 #控制show按钮开关的两种状态
         self.voice_button_checked=0 #控制voice按钮开关的两种状态
+        self.time_button_checked=0
+        self.time_seted=0
+        self.first_judge=0  #用于计时时判断是否是第一次遇到标准
         clear_cache()
 
     def judge1(self):
+        global global_points_list
+        global_points_list=[]
         jsonlist=os.listdir(folder1)
         count1,count2=0.0,0.0
         chosedfile=max(jsonlist)
@@ -368,7 +391,33 @@ class MainWindow(QMainWindow):
 
     def running1(self):
         self.right_label2.setText(self.judge1())
-
+        if(self.time_button_checked==1):
+            if(self.judge1()=="标准"):
+                if(self.first_judge==0):
+                    self.time_start = time.time()
+                    self.first_judge=1
+                else:
+                    now_time=time.time()
+                    if((self.time_seted-(now_time-self.time_start))<=0):
+                        self.remain_time_label.setText("本次运动达标!!!")
+                        self.time_button_checked=0
+                        self.time_btn.setText("重新设定时间")
+                    elif((self.time_seted-(now_time-self.time_start))==10):
+                        engine = pyttsx3.init()
+                        engine.say("加油！还有十秒钟")
+                    else:
+                        #控制输出剩余运动时间
+                        self.remain_time_label.setText("距离本次运动结束还有"+str(round((self.time_seted-(now_time-self.time_start)),1))+"s")
+            else:
+                if(self.first_judge==0):
+                    pass
+                else:
+                    #self.time_end = time.time()
+                    #self.time_c= self.time_end - self.time_start  
+                    #print('time cost', self.time_c, 's')
+                    self.first_judge=0
+        if(self.show_button_checked==1):
+            self.right_label.update()
         #if(self.show_button_checked==1):
         #    self.drawing.update()
 
@@ -377,6 +426,31 @@ class MainWindow(QMainWindow):
 
     def running2(self):
         self.right_label2.setText(self.judge2())
+        if(self.time_button_checked==1):
+            if(self.judge2()=="标准"):
+                if(self.first_judge==0):
+                    self.time_start = time.time()
+                    self.first_judge=1
+                else:
+                    now_time=time.time()
+                    if((self.time_seted-(now_time-self.time_start))<=0):
+                        self.remain_time_label.setText("本次运动达标!!!")
+                        self.time_button_checked=0
+                        self.time_btn.setText("重新设定时间")
+                    elif((self.time_seted-(now_time-self.time_start))==10):
+                        engine = pyttsx3.init()
+                        engine.say("加油！还有十秒钟")
+                    else:
+                        #控制输出剩余运动时间
+                        self.remain_time_label.setText("距离本次运动结束还有"+str(round((self.time_seted-(now_time-self.time_start)),1))+"s")
+            else:
+                if(self.first_judge==0):
+                    pass
+                else:
+                    #self.time_end = time.time()
+                    #self.time_c= self.time_end - self.time_start  
+                    #print('time cost', self.time_c, 's')
+                    self.first_judge=0
         if(self.show_button_checked==1):
             self.right_label.update()
 
@@ -388,6 +462,7 @@ class MainWindow(QMainWindow):
         start_openpose()
         wndtitle = 'OpenPose 1.5.1'
         wndclass = None
+        time.sleep(3)
         while True:
             wnd=win32gui.FindWindow(wndclass, wndtitle)
             if(wnd!=0):          
@@ -431,6 +506,7 @@ class MainWindow(QMainWindow):
             start_openpose_upload()
             wndtitle = 'OpenPose 1.5.1'
             wndclass = None
+            time.sleep(3)
             while True:
                 wnd=win32gui.FindWindow(wndclass, wndtitle)
 				
@@ -440,7 +516,19 @@ class MainWindow(QMainWindow):
                     self.running_timer.timeout.connect(self.running2)
                     self.running_timer.start(30)
                     break
-
+    
+    def _set_time(self):
+        if(self.time_button_checked==1):
+            self.time_btn.setText("重新设定时间")
+            self.time_button_checked=0
+        else:
+            #参考链接 https://www.cnblogs.com/linyfeng/p/11223711.html
+            num,ok=QInputDialog.getInt(None, "计时时间设定", "请输入运动时间(s)", 10)
+            if ok and num:
+                self.time_seted=num
+                self.remain_time_label.setText("距离本次运动结束还有"+str(self.time_seted)+"s")
+                self.time_btn.setText("已开始计时")
+                self.time_button_checked=1
     def _voice(self):
         if(self.voice_button_checked==1):
             self.voice_btn.setText("关闭声音")
@@ -466,14 +554,17 @@ class MainWindow(QMainWindow):
         '''
 
     def _show(self):
+        global if_drawing
         if (self.show_button_checked==1):
-            self.show_btn.setText("关闭火柴人显示")
+            self.show_btn.setText("回显已关闭")
             #self.drawing=DrawCircle()
             #self.right_label.createWindowContainer(self.drawing, self)
             self.show_button_checked=0
+            if_drawing=0
         else:
-            self.show_btn.setText("火柴人显示")
+            self.show_btn.setText("回显已开启")
             self.show_button_checked=1
+            if_drawing=1
             
 
 
