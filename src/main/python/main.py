@@ -29,6 +29,7 @@ global global_points_list
 global_points_list = []
 global if_drawing
 if_drawing=0
+engine=pyttsx3.init()
 
 class DrawCircle(QWidget):
     def __init__(self,parent=None):
@@ -145,7 +146,7 @@ class MainWindow(QMainWindow):
         label1.setPalette(pe)
 
         # 声音 按钮
-        self.voice_btn = QPushButton("声音")
+        self.voice_btn = QPushButton("打开声音")
         self.voice_btn.setFixedSize(200, 60)
         button_layout.addWidget(self.voice_btn)
         self.voice_btn.clicked.connect(self._voice)
@@ -400,11 +401,16 @@ class MainWindow(QMainWindow):
                     now_time=time.time()
                     if((self.time_seted-(now_time-self.time_start))<=0):
                         self.remain_time_label.setText("本次运动达标!!!")
+                        if(self.voice_button_checked==1):
+                            engine.say("本次运动达标")
+                            engine.runAndWait()
                         self.time_button_checked=0
+                        self.first_judge=0
                         self.time_btn.setText("重新设定时间")
                     elif((self.time_seted-(now_time-self.time_start))==10):
-                        engine = pyttsx3.init()
-                        engine.say("加油！还有十秒钟")
+                        if(self.voice_button_checked==1):
+                            engine.say("加油！还有十秒钟")
+                            engine.runAndWait()           
                     else:
                         #控制输出剩余运动时间
                         self.remain_time_label.setText("距离本次运动结束还有"+str(round((self.time_seted-(now_time-self.time_start)),1))+"s")
@@ -418,6 +424,7 @@ class MainWindow(QMainWindow):
                     self.first_judge=0
         if(self.show_button_checked==1):
             self.right_label.update()
+
         #if(self.show_button_checked==1):
         #    self.drawing.update()
 
@@ -435,11 +442,16 @@ class MainWindow(QMainWindow):
                     now_time=time.time()
                     if((self.time_seted-(now_time-self.time_start))<=0):
                         self.remain_time_label.setText("本次运动达标!!!")
+                        if(self.voice_button_checked==1):
+                            engine.say("本次运动达标")
+                            engine.runAndWait()
                         self.time_button_checked=0
+                        self.first_judge=0
                         self.time_btn.setText("重新设定时间")
                     elif((self.time_seted-(now_time-self.time_start))==10):
-                        engine = pyttsx3.init()
-                        engine.say("加油！还有十秒钟")
+                        if(self.voice_button_checked==1):
+                            engine.say("加油！还有十秒钟")
+                            engine.runAndWait()
                     else:
                         #控制输出剩余运动时间
                         self.remain_time_label.setText("距离本次运动结束还有"+str(round((self.time_seted-(now_time-self.time_start)),1))+"s")
@@ -531,10 +543,10 @@ class MainWindow(QMainWindow):
                 self.time_button_checked=1
     def _voice(self):
         if(self.voice_button_checked==1):
-            self.voice_btn.setText("关闭声音")
+            self.voice_btn.setText("打开声音")
             self.voice_button_checked=0
         else:
-            self.voice_btn.setText("打开声音")
+            self.voice_btn.setText("关闭声音")
             self.voice_button_checked=1
         '''
         if(self.voice_btn.isChecked()):
