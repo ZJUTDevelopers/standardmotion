@@ -90,7 +90,7 @@ folder1 = './json1'
 folder2 = './json2'
 
 
-#清除上一次运行剩余json文件
+#清除json文件
 def clear_cache():
     for the_file in os.listdir(folder1):
         file_path = os.path.join(folder1, the_file)
@@ -104,7 +104,7 @@ class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         # 设置窗口名称
-        self.setWindowTitle("standardmotion")
+        self.setWindowTitle("StandardMotion")
 
         # 设置状态栏
         self.status = self.statusBar()
@@ -383,9 +383,7 @@ class MainWindow(QMainWindow):
 
 
     def center(self):
-        """
-        获取桌面长宽  获取窗口长宽 计算位置 移动
-        """
+        #获取桌面长宽  获取窗口长宽 计算位置 移动
         screen = QDesktopWidget().screenGeometry()
         size = self.geometry()
         self.move((screen.width() - size.width()) / 2, (screen.height() - size.height()) / 2)
@@ -418,18 +416,10 @@ class MainWindow(QMainWindow):
                 if(self.first_judge==0):
                     pass
                 else:
-                    #self.time_end = time.time()
-                    #self.time_c= self.time_end - self.time_start  
-                    #print('time cost', self.time_c, 's')
                     self.first_judge=0
         if(self.show_button_checked==1):
             self.right_label.update()
 
-        #if(self.show_button_checked==1):
-        #    self.drawing.update()
-
-        #self.right_label2.setText("标准")
-    
 
     def running2(self):
         self.right_label2.setText(self.judge2())
@@ -459,14 +449,9 @@ class MainWindow(QMainWindow):
                 if(self.first_judge==0):
                     pass
                 else:
-                    #self.time_end = time.time()
-                    #self.time_c= self.time_end - self.time_start  
-                    #print('time cost', self.time_c, 's')
                     self.first_judge=0
         if(self.show_button_checked==1):
             self.right_label.update()
-
-        #self.right_label2.setText("标准")
     
 
 
@@ -548,22 +533,6 @@ class MainWindow(QMainWindow):
         else:
             self.voice_btn.setText("关闭声音")
             self.voice_button_checked=1
-        '''
-        if(self.voice_btn.isChecked()):
-            #self.voice_label.setText("开启中")
-            self.voice_btn.setText("关闭")
-
-            pixmap = QPixmap('./image/sound.png')
-            pixmap=pixmap.scaled(200,200)
-
-        else:
-            #self.voice_label.setText("未开启")
-            self.voice_btn.setText("开启")
-
-            pixmap = QPixmap('./image/mute.png')
-            pixmap=pixmap.scaled(200,200)
-
-        '''
 
     def _show(self):
         global if_drawing
