@@ -23,6 +23,7 @@ from pyttsx3 import driver
 from pyttsx3 import drivers
 from pyttsx3.drivers import sapi5
 import random
+import numpy as np
 
 initialed=False
 global global_points_list
@@ -30,6 +31,20 @@ global_points_list = []
 global if_drawing
 if_drawing=0
 engine=pyttsx3.init()
+
+def degree_count(x, y):
+    # 分别计算两个向量的模：
+    l_x = np.sqrt(x.dot(x))
+    l_y = np.sqrt(y.dot(y))
+    # 计算两个向量的点积
+    dian = x.dot(y)
+    # 计算夹角的cos值：
+    cos_=dian/(l_x*l_y)
+    # 求得夹角（弧度制）：
+    angle_hu=np.arccos(cos_)
+    # 转换为角度值：
+    angle_d=angle_hu*180/np.pi
+    return angle_d
 
 class DrawCircle(QWidget):
     def __init__(self,parent=None):
@@ -75,7 +90,7 @@ class DrawCircle(QWidget):
 
 
 def qualified(x,y):
-    if( 0.12<x<0.88 and 0.12<y<0.88):
+    if( 0.05<x<0.95 and 0.05<y<0.95):
         return True
     else:
         return False
@@ -88,7 +103,6 @@ def start_openpose_upload():
 
 folder1 = './json1'
 folder2 = './json2'
-
 
 #清除json文件
 def clear_cache():
@@ -104,11 +118,11 @@ class MainWindow(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         # 设置窗口名称
-        self.setWindowTitle("StandardMotion")
-
+        self.setWindowTitle("基于openpose的静态健身教练系统")
+        
         # 设置状态栏
-        self.status = self.statusBar()
-        self.status.showMessage("ZJUTDevelpoers")
+        # self.status = self.statusBar()
+        # self.status.showMessage("ZJUTDevelpoers")
 
         # 设置初始化的窗口大小
         self.setFixedSize(1200, 800)
@@ -135,9 +149,9 @@ class MainWindow(QMainWindow):
         #MEUN 标签
         label1 = QLabel(self)
         label1.setFixedSize(200,60)
-        label1.setText("MENU")
+        label1.setText("菜单")
         label1.setAlignment( Qt.AlignCenter) #设置居中
-        label1.setFont(QFont("Century",20,QFont.Bold))
+        label1.setFont(QFont("Century",40,QFont.Bold))
         button_layout.addWidget(label1)
 
   
@@ -148,31 +162,72 @@ class MainWindow(QMainWindow):
         # 声音 按钮
         self.voice_btn = QPushButton("打开声音")
         self.voice_btn.setFixedSize(200, 60)
+        self.voice_btn.setStyleSheet('''QPushButton{background:rgb(6,8,200);border-radius:5px;color:white;font-family:AdobeHeitiStd;font-size:25px}
+                                        QPushButton:hover{background:rgb(106,118,200);}
+                                        QPushButton:pressed{background-color:rgb(106,118,200)}''')
         button_layout.addWidget(self.voice_btn)
         self.voice_btn.clicked.connect(self._voice)
         # 火柴人显示 按钮
         self.show_btn = QPushButton("开启回显")
         self.show_btn.setFixedSize(200, 60)
+        self.show_btn.setStyleSheet('''QPushButton{background:rgb(6,8,200);border-radius:5px;color:white;font-family:AdobeHeitiStd;font-size:25px}
+                                        QPushButton:hover{background:rgb(106,118,200);}
+                                        QPushButton:pressed{background-color:rgb(106,118,200)}''')
         button_layout.addWidget(self.show_btn)
         self.show_btn.clicked.connect(self._show)
         # 计时 按钮
         self.time_btn = QPushButton("设定运动时间")
         self.time_btn.setFixedSize(200, 60)
+        self.time_btn.setStyleSheet('''QPushButton{background:rgb(6,8,200);border-radius:5px;color:white;font-family:AdobeHeitiStd;font-size:25px}
+                                        QPushButton:hover{background:rgb(106,118,200);}
+                                        QPushButton:pressed{background-color:rgb(106,118,200)}''')
         button_layout.addWidget(self.time_btn)
         self.time_btn.clicked.connect(self._set_time)
         # 关于 按钮
         self.about_btn = QPushButton("关于")
         self.about_btn.setFixedSize(200, 60)
+        self.about_btn.setStyleSheet('''QPushButton{background:rgb(6,8,200);border-radius:5px;color:white;font-family:AdobeHeitiStd;font-size:25px}
+                                        QPushButton:hover{background:rgb(106,118,200);}
+                                        QPushButton:pressed{background-color:rgb(106,118,200)}''')
         button_layout.addWidget(self.about_btn)
         self.about_btn.clicked.connect(self._about)
         # 退出 按钮
         self.quit_btn = QPushButton(top_left_frame)
         self.quit_btn.setFixedSize(200, 60), self.quit_btn.setText("退出")
+        self.quit_btn.setStyleSheet('''QPushButton{background:rgb(6,8,200);border-radius:5px;color:white;font-family:AdobeHeitiStd;font-size:25px}
+                                        QPushButton:hover{background:rgb(106,118,200);}
+                                        QPushButton:pressed{background-color:rgb(106,118,200)}''')
         button_layout.addWidget(self.quit_btn)
         self.quit_btn.clicked.connect(self._quit)
+
+
+
+        self.chose_action_btn=QComboBox()
+        self.chose_action_btn.setEditable(True)
+        self.chose_action_btn.lineEdit().setAlignment(QtCore.Qt.AlignCenter)
+        self.chose_action_btn.addItem('平板支撑')
+        self.chose_action_btn.addItem('俄式挺身')
+        self.chose_action_btn.addItem('马步')
+        # self.chose_action_btn.addItem('其他动作')
+        self.chose_action_btn.setFixedSize(200,60)
+        self.chose_action_btn.setStyleSheet('''QComboBox{background:rgb(6,8,200);border-radius:5px;color:white;font-family:AdobeHeitiStd;font-size:25px}
+                                        QComboBox:hover{background:rgb(106,118,200);}
+                                        QComboBox:pressed{background-color:rgb(106,118,200)}''')
+        self.chose_action_btn.currentIndexChanged.connect(self.now_action_is)
+        button_layout.addWidget(self.chose_action_btn)
+        
+
+
+
         # 增加间距，美化界面
         button_layout.addStretch(1)
+
+
         
+
+
+
+
         right_frame = QFrame(self)
         #right_frame.setFrameShape(QFrame.StyledPanel)
         right_frame.setStyleSheet('background-color:rgb(239,242,249);')
@@ -222,12 +277,12 @@ class MainWindow(QMainWindow):
 
         
         self.right_label2=QLabel()
-        self.right_label2.setText("程序未运行")
-        self.right_label2.setFixedSize(300,50)
+        self.right_label2.setText("检测未开始")
+        self.right_label2.setFixedSize(500,60)
         self.right_label2.setStyleSheet("QLabel{background-color :rgb(231,234,251);border-radius: 15px;border-style: outset;border-width: 2px;border-color: bule;color:black}")
         #self.right_label2.setAlignment(Qt.AlignCenter)
         self.right_label2.setAlignment(Qt.AlignCenter) 
-        self.right_label2.setFont(QFont("隶书",30, QFont.Bold) )
+        self.right_label2.setFont(QFont("隶书",50, QFont.Bold) )
 
         pe = QPalette()
         #pe.setColor(QPalette.WindowText,Qt.red)
@@ -244,11 +299,11 @@ class MainWindow(QMainWindow):
 
         self.remain_time_label=QLabel()
         self.remain_time_label.setText("距离本次运动结束还有0s")
-        self.remain_time_label.setFixedSize(400,30)
+        self.remain_time_label.setFixedSize(500,40)
         self.remain_time_label.setStyleSheet("QLabel{background-color :rgb(231,234,251);border-radius: 15px;border-style: outset;border-width: 2px;border-color: bule;color:black}")
         #self.right_label2.setAlignment(Qt.AlignCenter)
         self.remain_time_label.setAlignment(Qt.AlignCenter) 
-        self.remain_time_label.setFont(QFont("隶书",10, QFont.Bold) )
+        self.remain_time_label.setFont(QFont("隶书",30, QFont.Bold) )
         
         remain_time_widget = QHBoxLayout()
         remain_time_widget.addWidget(self.remain_time_label)
@@ -286,6 +341,7 @@ class MainWindow(QMainWindow):
         self.time_button_checked=0
         self.time_seted=0
         self.first_judge=0  #用于计时时判断是否是第一次遇到标准
+        self.now_action="平板支撑"
         clear_cache()
 
     def judge1(self):
@@ -295,44 +351,132 @@ class MainWindow(QMainWindow):
         count1,count2=0.0,0.0
         chosedfile=max(jsonlist)
 
-
         with open(folder1 + '\\' + chosedfile, 'r') as jsonfile:
             data = json.load(jsonfile)
         
         if(len(data['people'])==0):
             return("未检测到人体")
-
-        key_point_array = data['people'][0]['pose_keypoints_2d']
-        midhipx, midhipy = key_point_array[8 * 3], key_point_array[8 * 3 + 1]
-        Rkneex, Rkneey = key_point_array[10 * 3], key_point_array[10 * 3 + 1]
-        Neckx, Necky = key_point_array[1 * 3], key_point_array[1 * 3 + 1]
-        Nosex, Nosey = key_point_array[0], key_point_array[1]
-        RHeelx, RHeely = key_point_array[24 * 3], key_point_array[24 * 3 + 1]
-        REarx, REary =  key_point_array[17 * 3], key_point_array[17 * 3 + 1]
-        
-
-        for i, j in [(17,1),(1,8),(8,10),(10,11),(11,22),(2,3),(3,4)]:
-            if (qualified(key_point_array[3 * i], key_point_array[3 * i + 1]) and qualified(key_point_array[3 * j],key_point_array[3 * j + 1])):
-                global_points_list.append([(key_point_array[3 * i], key_point_array[3 * i + 1]),(key_point_array[3 * j], key_point_array[3 * j + 1])])
-
-        if (((Neckx - Nosex)!=0) and ((midhipx - Rkneex)!=0) and ((midhipx - RHeelx)!=0) and (midhipy - RHeely)!=0):
-            # k_1_2 = (Necky - Nosey) / (Neckx - Nosex)
-            # k_1_3 = (Nosey - midhipy) / (Nosex - midhipx)
-            k_1_2 = (Necky - REary) / (Neckx - REarx)
-            k_1_3 = (REary - midhipy) / (REarx - midhipx)
-            k_2_3 = (Necky - midhipy) / (Neckx - midhipx)
-            k_3_4 = (midhipy - Rkneey) / (midhipx - Rkneex)
-            k_3_5 = (midhipy - RHeely) / (midhipx - RHeelx)
-            #print(k_2_3, "  ", k_3_4, "    ", abs(k_2_3 / k_3_4))
-            if (1.2 > abs(k_2_3 / k_3_4) > 0.4):
-                #print(k,"   ",chosedfile,"标准")
-                return("标准")
+        '''
+        平板支撑
+        '''
+        if(self.now_action=='平板支撑'):
+            #print('平板支撑')
+            key_point_array = data['people'][0]['pose_keypoints_2d']
+            midhipx, midhipy = key_point_array[8 * 3], key_point_array[8 * 3 + 1]
+            Rkneex, Rkneey = key_point_array[10 * 3], key_point_array[10 * 3 + 1]
+            Neckx, Necky = key_point_array[1 * 3], key_point_array[1 * 3 + 1]
+            Nosex, Nosey = key_point_array[0], key_point_array[1]
+            RHeelx, RHeely = key_point_array[24 * 3], key_point_array[24 * 3 + 1]
+            REarx, REary =  key_point_array[17 * 3], key_point_array[17 * 3 + 1]
+            
+    
+            for i, j in [(0,1),(1,8),(8,10),(10,11),(11,22),(2,3),(3,4)]:
+                if (qualified(key_point_array[3 * i], key_point_array[3 * i + 1]) and qualified(key_point_array[3 * j],key_point_array[3 * j + 1])):
+                    global_points_list.append([(key_point_array[3 * i], key_point_array[3 * i + 1]),(key_point_array[3 * j], key_point_array[3 * j + 1])])
+    
+            if (((Neckx - Nosex)!=0) and ((midhipx - Rkneex)!=0) and ((midhipx - RHeelx)!=0) and (midhipy - RHeely)!=0):
+                # k_1_2 = (Necky - Nosey) / (Neckx - Nosex)
+                # k_1_3 = (Nosey - midhipy) / (Nosex - midhipx)
+                k_1_2 = (Necky - REary) / (Neckx - REarx)
+                k_1_3 = (REary - midhipy) / (REarx - midhipx)
+                k_2_3 = (Necky - midhipy) / (Neckx - midhipx)
+                k_3_4 = (midhipy - Rkneey) / (midhipx - Rkneex)
+                k_3_5 = (midhipy - RHeely) / (midhipx - RHeelx)
+                #print(k_2_3, "  ", k_3_4, "    ", abs(k_2_3 / k_3_4))
+                if (1.2 > abs(k_2_3 / k_3_4) > 0.4):
+                    #print(k,"   ",chosedfile,"标准")
+                    return("标准")
+                else:
+                    #print(k,"   ",chosedfile,"不标准")
+                    return("不标准")
+            #print(count1,count2,count1/count2)
             else:
-                #print(k,"   ",chosedfile,"不标准")
-                return("不标准")
-        #print(count1,count2,count1/count2)
-        else:
-            return("图像不完整")
+                return("图像不完整")
+        '''
+        马步
+        '''
+        if(self.now_action=='马步'):
+            #print("马步")
+            key_point_array = data['people'][0]['pose_keypoints_2d']
+            midhipx, midhipy = key_point_array[8 * 3], key_point_array[8 * 3 + 1]
+            Lkneex, Lkneey = key_point_array[13 * 3], key_point_array[13 * 3 + 1]
+            Neckx, Necky = key_point_array[1 * 3], key_point_array[1 * 3 + 1]
+            Nosex, Nosey = key_point_array[0], key_point_array[1]
+            Lfootx, Lfooty = key_point_array[21 * 3], key_point_array[21 * 3 + 1]
+            Lwristx, Lwristy =  key_point_array[7 * 3], key_point_array[7 * 3 + 1]
+            Lshoulderx, Lshouldery =  key_point_array[5 * 3], key_point_array[5 * 3 + 1]
+            Lhipx, Lhipy = key_point_array[12 * 3], key_point_array[12 * 3 + 1]
+            
+            
+            for i, j in [(0,1),(1,8),(9,10),(10,11),(11,22),(2,3),(3,4)]:  # [(18,1),(1,8),(12,13),(13,14),(14,19),(5,6),(6,7)]
+                if (qualified(key_point_array[3 * i], key_point_array[3 * i + 1]) and qualified(key_point_array[3 * j],key_point_array[3 * j + 1])):
+                    global_points_list.append([(key_point_array[3 * i], key_point_array[3 * i + 1]),(key_point_array[3 * j], key_point_array[3 * j + 1])])
+            
+            if (((Neckx - Nosex)!=0) and ((midhipx - Lkneex)!=0) and ((midhipx - Lfootx)!=0) and (midhipy - Lfooty)!=0):
+                v_0_1 = np.array([(Nosex - Neckx), (Nosey - Necky)])
+                v_1_8 = np.array([(Neckx - midhipx), (Necky - midhipy)])
+                v_5_7 = np.array([(Lshoulderx - Lwristx), (Lshouldery - Lwristy)])
+                v_13_12 = np.array([(Lkneex - Lhipx), (Lkneey - Lhipy)])
+                v_13_14 = np.array([(Lkneex - Lfootx), (Lkneey - Lfooty)])
+            
+                degree_1 = degree_count(v_1_8, v_5_7)
+                degree_2 = degree_count(v_1_8, v_13_12)
+                degree_3 = degree_count(v_13_12, v_13_14)
+                print("degree_1=", degree_1)
+                print("degree_2=", degree_2)
+                print("degree_3=", degree_3)
+            
+                if (degree_1 > 100 and 115 > degree_2 > 80 and 125 > degree_2 > 90):
+                    print("标准")
+                else:
+                    print("不标准")
+            #print(count1,count2,count1/count2)
+            else:
+                print("图像不完整")
+ 
+
+        '''
+        俄挺
+        '''
+        if(self.now_action=='俄式挺身'):
+            #print("俄挺")
+            key_point_array = data['people'][0]['pose_keypoints_2d']
+            midhipx, midhipy = key_point_array[8 * 3], key_point_array[8 * 3 + 1]
+            Lkneex, Lkneey = key_point_array[13 * 3], key_point_array[13 * 3 + 1]
+            Neckx, Necky = key_point_array[1 * 3], key_point_array[1 * 3 + 1]
+            Nosex, Nosey = key_point_array[0], key_point_array[1]
+            LEarx, LEary = key_point_array[18 * 3], key_point_array[18 * 3]
+            Lfootx, Lfooty = key_point_array[21 * 3], key_point_array[21 * 3 + 1]
+            Lwristx, Lwristy =  key_point_array[7 * 3], key_point_array[7 * 3 + 1]
+            Lshoulderx, Lshouldery =  key_point_array[5 * 3], key_point_array[5 * 3 + 1]
+            Lhipx, Lhipy = key_point_array[12 * 3], key_point_array[12 * 3 + 1]
+            
+            
+            for i, j in [(0,1),(1,8),(9,10),(10,11),(11,22),(2,3),(3,4)]:  # [(18,1),(1,8),(12,13),(13,14),(14,19),(5,6),(6,7)]
+                if (qualified(key_point_array[3 * i], key_point_array[3 * i + 1]) and qualified(key_point_array[3 * j],key_point_array[3 * j + 1])):
+                    global_points_list.append([(key_point_array[3 * i], key_point_array[3 * i + 1]),(key_point_array[3 * j], key_point_array[3 * j + 1])])
+            
+            if (((Neckx - Nosex)!=0) and ((midhipx - Lkneex)!=0) and ((midhipx - Lfootx)!=0) and (midhipy - Lfooty)!=0):
+                v_0_1 = np.array([(Nosex - Neckx), (Nosey - Necky)])
+                v_1_8 = np.array([(Neckx - midhipx), (Necky - midhipy)])
+                v_5_7 = np.array([(Lshoulderx - Lwristx), (Lshouldery - Lwristy)])
+                v_13_12 = np.array([(Lkneex - Lhipx), (Lkneey - Lhipy)])
+                v_13_14 = np.array([(Lkneex - Lfootx), (Lkneey - Lfooty)])
+            
+                degree_1 = degree_count(v_1_8, v_5_7)
+                degree_2 = degree_count(v_1_8, v_13_12)
+                degree_3 = degree_count(v_13_12, v_13_14)
+                print("degree_1=", degree_1)
+                print("degree_2=", degree_2)
+                print("degree_3=", degree_3)
+            
+                if (80 > degree_1 > 40 and degree_2 > 160 and degree_2 > 160 and Lwristy > Lshouldery):
+                    print("标准")
+                else:
+                    print("不标准")
+            #print(count1,count2,count1/count2)
+            else:
+                print("图像不完整")       
     
     
     def judge2(self):
@@ -348,37 +492,127 @@ class MainWindow(QMainWindow):
         
         if(len(data['people'])==0):
             return("未检测到人体")
-
-        key_point_array = data['people'][0]['pose_keypoints_2d']
-        midhipx, midhipy = key_point_array[8 * 3], key_point_array[8 * 3 + 1]
-        Rkneex, Rkneey = key_point_array[10 * 3], key_point_array[10 * 3 + 1]
-        Neckx, Necky = key_point_array[1 * 3], key_point_array[1 * 3 + 1]
-        Nosex, Nosey = key_point_array[0], key_point_array[1]
-        RHeelx, RHeely = key_point_array[24 * 3], key_point_array[24 * 3 + 1]
-        REarx, REary =  key_point_array[17 * 3], key_point_array[17 * 3 + 1]
-
-        for i, j in [(17,1),(1,8),(8,10),(10,11),(11,22),(2,3),(3,4)]:
-            if (qualified(key_point_array[3 * i], key_point_array[3 * i + 1]) and qualified(key_point_array[3 * j],key_point_array[3 * j + 1])):
-                global_points_list.append([(key_point_array[3 * i], key_point_array[3 * i + 1]),(key_point_array[3 * j], key_point_array[3 * j + 1])])
-       
-        if (((Neckx - Nosex)!=0) and ((midhipx - Rkneex)!=0) and ((midhipx - RHeelx)!=0) and (midhipy - RHeely)!=0):
-            # k_1_2 = (Necky - Nosey) / (Neckx - Nosex)
-            # k_1_3 = (Nosey - midhipy) / (Nosex - midhipx)
-            k_1_2 = (Necky - REary) / (Neckx - REarx)
-            k_1_3 = (REary - midhipy) / (REarx - midhipx)
-            k_2_3 = (Necky - midhipy) / (Neckx - midhipx)
-            k_3_4 = (midhipy - Rkneey) / (midhipx - Rkneex)
-            k_3_5 = (midhipy - RHeely) / (midhipx - RHeelx)
-            #print(k_2_3, "  ", k_3_4, "    ", abs(k_2_3 / k_3_4))
-            if (1.2 > abs(k_2_3 / k_3_4) > 0.4):
-                #print(k,"   ",chosedfile,"标准")
-                return("标准")
+        '''
+        平板支撑
+        '''
+        if(self.now_action=='平板支撑'):
+            #print('平板支撑')
+            key_point_array = data['people'][0]['pose_keypoints_2d']
+            midhipx, midhipy = key_point_array[8 * 3], key_point_array[8 * 3 + 1]
+            Rkneex, Rkneey = key_point_array[10 * 3], key_point_array[10 * 3 + 1]
+            Neckx, Necky = key_point_array[1 * 3], key_point_array[1 * 3 + 1]
+            Nosex, Nosey = key_point_array[0], key_point_array[1]
+            RHeelx, RHeely = key_point_array[24 * 3], key_point_array[24 * 3 + 1]
+            REarx, REary =  key_point_array[17 * 3], key_point_array[17 * 3 + 1]
+            
+    
+            for i, j in [(0,1),(1,8),(8,10),(10,11),(11,22),(2,3),(3,4)]:
+                if (qualified(key_point_array[3 * i], key_point_array[3 * i + 1]) and qualified(key_point_array[3 * j],key_point_array[3 * j + 1])):
+                    global_points_list.append([(key_point_array[3 * i], key_point_array[3 * i + 1]),(key_point_array[3 * j], key_point_array[3 * j + 1])])
+    
+            if (((Neckx - Nosex)!=0) and ((midhipx - Rkneex)!=0) and ((midhipx - RHeelx)!=0) and (midhipy - RHeely)!=0):
+                # k_1_2 = (Necky - Nosey) / (Neckx - Nosex)
+                # k_1_3 = (Nosey - midhipy) / (Nosex - midhipx)
+                k_1_2 = (Necky - REary) / (Neckx - REarx)
+                k_1_3 = (REary - midhipy) / (REarx - midhipx)
+                k_2_3 = (Necky - midhipy) / (Neckx - midhipx)
+                k_3_4 = (midhipy - Rkneey) / (midhipx - Rkneex)
+                k_3_5 = (midhipy - RHeely) / (midhipx - RHeelx)
+                #print(k_2_3, "  ", k_3_4, "    ", abs(k_2_3 / k_3_4))
+                if (1.2 > abs(k_2_3 / k_3_4) > 0.4):
+                    #print(k,"   ",chosedfile,"标准")
+                    return("标准")
+                else:
+                    #print(k,"   ",chosedfile,"不标准")
+                    return("不标准")
+            #print(count1,count2,count1/count2)
             else:
-                #print(k,"   ",chosedfile,"不标准")
-                return("不标准")
-        #print(count1,count2,count1/count2)
-        else:
-            return("图像不完整")
+                return("图像不完整")
+        '''
+        马步
+        '''
+        if(self.now_action=='马步'):
+            # print("马步")
+            key_point_array = data['people'][0]['pose_keypoints_2d']
+            midhipx, midhipy = key_point_array[8 * 3], key_point_array[8 * 3 + 1]
+            Lkneex, Lkneey = key_point_array[13 * 3], key_point_array[13 * 3 + 1]
+            Neckx, Necky = key_point_array[1 * 3], key_point_array[1 * 3 + 1]
+            Nosex, Nosey = key_point_array[0], key_point_array[1]
+            Lfootx, Lfooty = key_point_array[21 * 3], key_point_array[21 * 3 + 1]
+            Lwristx, Lwristy =  key_point_array[7 * 3], key_point_array[7 * 3 + 1]
+            Lshoulderx, Lshouldery =  key_point_array[5 * 3], key_point_array[5 * 3 + 1]
+            Lhipx, Lhipy = key_point_array[12 * 3], key_point_array[12 * 3 + 1]
+            
+            
+            for i, j in [(0,1),(1,8),(9,10),(10,11),(11,22),(2,3),(3,4)]:  # [(18,1),(1,8),(12,13),(13,14),(14,19),(5,6),(6,7)]
+                if (qualified(key_point_array[3 * i], key_point_array[3 * i + 1]) and qualified(key_point_array[3 * j],key_point_array[3 * j + 1])):
+                    global_points_list.append([(key_point_array[3 * i], key_point_array[3 * i + 1]),(key_point_array[3 * j], key_point_array[3 * j + 1])])
+            
+            if (((Neckx - Nosex)!=0) and ((midhipx - Lkneex)!=0) and ((midhipx - Lfootx)!=0) and (midhipy - Lfooty)!=0):
+                v_0_1 = np.array([(Nosex - Neckx), (Nosey - Necky)])
+                v_1_8 = np.array([(Neckx - midhipx), (Necky - midhipy)])
+                v_5_7 = np.array([(Lshoulderx - Lwristx), (Lshouldery - Lwristy)])
+                v_13_12 = np.array([(Lkneex - Lhipx), (Lkneey - Lhipy)])
+                v_13_14 = np.array([(Lkneex - Lfootx), (Lkneey - Lfooty)])
+            
+                degree_1 = degree_count(v_1_8, v_5_7)
+                degree_2 = degree_count(v_1_8, v_13_12)
+                degree_3 = degree_count(v_13_12, v_13_14)
+                # print("degree_1=", degree_1)
+                # print("degree_2=", degree_2)
+                # print("degree_3=", degree_3)
+            
+                if (degree_1 > 90 and 120 > degree_2 > 80 and 125 > degree_2 > 90):
+                    return ("标准")
+                else:
+                    return("不标准")
+            #print(count1,count2,count1/count2)
+            else:
+                return("图像不完整")
+ 
+
+        '''
+        俄挺
+        '''
+        if(self.now_action=='俄式挺身'):
+            # print("俄挺")
+            key_point_array = data['people'][0]['pose_keypoints_2d']
+            midhipx, midhipy = key_point_array[8 * 3], key_point_array[8 * 3 + 1]
+            Lkneex, Lkneey = key_point_array[13 * 3], key_point_array[13 * 3 + 1]
+            Neckx, Necky = key_point_array[1 * 3], key_point_array[1 * 3 + 1]
+            Nosex, Nosey = key_point_array[0], key_point_array[1]
+            LEarx, LEary = key_point_array[18 * 3], key_point_array[18 * 3]
+            Lfootx, Lfooty = key_point_array[21 * 3], key_point_array[21 * 3 + 1]
+            Lwristx, Lwristy =  key_point_array[7 * 3], key_point_array[7 * 3 + 1]
+            Lshoulderx, Lshouldery =  key_point_array[5 * 3], key_point_array[5 * 3 + 1]
+            Lhipx, Lhipy = key_point_array[12 * 3], key_point_array[12 * 3 + 1]
+            
+            
+            for i, j in [(0,1),(1,8),(9,10),(10,11),(11,22),(2,3),(3,4)]:  # [(18,1),(1,8),(12,13),(13,14),(14,19),(5,6),(6,7)]
+                if (qualified(key_point_array[3 * i], key_point_array[3 * i + 1]) and qualified(key_point_array[3 * j],key_point_array[3 * j + 1])):
+                    global_points_list.append([(key_point_array[3 * i], key_point_array[3 * i + 1]),(key_point_array[3 * j], key_point_array[3 * j + 1])])
+            
+            if (((Neckx - Nosex)!=0) and ((midhipx - Lkneex)!=0) and ((midhipx - Lfootx)!=0) and (midhipy - Lfooty)!=0):
+                v_0_1 = np.array([(Nosex - Neckx), (Nosey - Necky)])
+                v_1_8 = np.array([(Neckx - midhipx), (Necky - midhipy)])
+                v_5_7 = np.array([(Lshoulderx - Lwristx), (Lshouldery - Lwristy)])
+                v_13_12 = np.array([(Lkneex - Lhipx), (Lkneey - Lhipy)])
+                v_13_14 = np.array([(Lkneex - Lfootx), (Lkneey - Lfooty)])
+            
+                degree_1 = degree_count(v_1_8, v_5_7)
+                degree_2 = degree_count(v_1_8, v_13_12)
+                degree_3 = degree_count(v_13_12, v_13_14)
+                # print("degree_1=", degree_1)
+                # print("degree_2=", degree_2)
+                # print("degree_3=", degree_3)
+            
+                if (80 > degree_1 > 40 and degree_2 > 160 and degree_2 > 160 and Lwristy > Lshouldery):
+                    return ("标准")
+                else:
+                    return ("不标准")
+            #print(count1,count2,count1/count2)
+            else:
+                return ("图像不完整")
     
 
 
@@ -387,6 +621,7 @@ class MainWindow(QMainWindow):
         screen = QDesktopWidget().screenGeometry()
         size = self.geometry()
         self.move((screen.width() - size.width()) / 2, (screen.height() - size.height()) / 2)
+
 
     def running1(self):
         self.right_label2.setText(self.judge1())
@@ -454,6 +689,10 @@ class MainWindow(QMainWindow):
             self.right_label.update()
     
 
+    def now_action_is(self):
+        self.now_action=self.chose_action_btn.currentText()
+        print(self.now_action)
+        
 
     def _start(self):
         start_openpose()
@@ -491,7 +730,6 @@ class MainWindow(QMainWindow):
         self.right_label.setMovie(movie)
         movie.start()
         '''
-        
         if videoName != "":  # “”为用户取消
 
             f = open('start2.bat', mode='w',encoding='utf-8')
@@ -514,18 +752,38 @@ class MainWindow(QMainWindow):
                     self.running_timer.start(30)
                     break
     
+
     def _set_time(self):
         if(self.time_button_checked==1):
             self.time_btn.setText("重新设定时间")
             self.time_button_checked=0
         else:
-            #参考链接 https://www.cnblogs.com/linyfeng/p/11223711.html
-            num,ok=QInputDialog.getInt(None, "计时时间设定", "请输入运动时间(s)", 10)
+            #参考链接 https://www.cnblogs.com/linyfeng/p/11223711.html           
+            dialog = QInputDialog(self)
+            font = QFont()
+            font.setFamily("Arial")
+            font.setPointSize(24)
+            dialog.setInputMode(QInputDialog.TextInput)
+            dialog.setWindowTitle('计时时间设定')
+            dialog.setLabelText('请输入运动时间(秒):')
+            dialog.setFont(font)
+            dialog.setOkButtonText("确定")
+            dialog.setCancelButtonText("取消")
+            dialog.resize(500,300)
+            # num,ok = dialog.getInt(None, "计时时间设定", "请输入运动时间(s)", 10)
+            ok = dialog.exec_()                                
+            num = float(dialog.textValue())
             if ok and num:
                 self.time_seted=num
                 self.remain_time_label.setText("距离本次运动结束还有"+str(self.time_seted)+"s")
                 self.time_btn.setText("已开始计时")
                 self.time_button_checked=1
+            else:
+                self.time_seted=10
+                self.remain_time_label.setText("距离本次运动结束还有"+str(self.time_seted)+"s")
+                self.time_btn.setText("已开始计时")
+                self.time_button_checked=1
+
     def _voice(self):
         if(self.voice_button_checked==1):
             self.voice_btn.setText("打开声音")
@@ -550,14 +808,16 @@ class MainWindow(QMainWindow):
 
 
     def _about(self):
-        QMessageBox.about(self,"standmotion","By ZJUTDevelopers") 
+        QMessageBox.about(self,"基于openpose的静态健身教练系统","浙江工业大学") 
+
 
     def end_check(self):
-        os.system('TASKKILL /F /T /FI "WINDOWTITLE eq running_openpose*"')
+        #os.system('TASKKILL /F /T /FI "WINDOWTITLE eq running_openpose*"')
+        os.system('TASKKILL /F /T /FI "imagename eq OpenPoseDemo.exe"')
         
 
     def _quit(self):
-        os.system('TASKKILL /F /T /FI "WINDOWTITLE eq running_openpose*"') #参考链接 https://blog.csdn.net/qq_36011182/article/details/80252170
+        os.system('TASKKILL /F /T /FI "imagename eq OpenPoseDemo.exe"') #参考链接 https://blog.csdn.net/qq_36011182/article/details/80252170
         clear_cache()
         self.close()
 
